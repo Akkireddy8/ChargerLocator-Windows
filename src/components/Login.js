@@ -29,9 +29,9 @@ function Login() {
             {error && <p style={{ color: 'red' }}>{error}</p>}
             <form onSubmit={handleLogin} className="form">
                 <label>Email:</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" required />
                 <label>Password:</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter password" required />
                 <button type="submit" className="form-button">Login</button>
             </form>
             <p>
