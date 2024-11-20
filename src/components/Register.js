@@ -10,13 +10,38 @@ function Register() {
     const [success, setSuccess] = useState('');
     const navigate = useNavigate();
 
-    const handleRegister = async (e) => {
-        e.preventDefault();
+    const validateInputs = () => {
+        // Email validation regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setError('Please enter a valid email address.');
+            return false;
+        }
+
+        // Password validation regex
+        const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!passwordRegex.test(password)) {
+            setError(
+                'Password must be at least 8 characters long, include an uppercase letter, a number, and a special character.'
+            );
+            return false;
+        }
 
         // Check if passwords match
         if (password !== confirmPassword) {
             setError('Passwords do not match!');
-            return;
+            return false;
+        }
+
+        setError(''); // Clear any validation errors if all checks pass
+        return true;
+    };
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+
+        if (!validateInputs()) {
+            return; // Stop submission if validation fails
         }
 
         try {
@@ -30,7 +55,7 @@ function Register() {
             }, 2000);
         } catch (err) {
             setError('Error registering user. Please try again.');
-            console.error("Error registering", err);
+            console.error('Error registering', err);
         }
     };
 
