@@ -10,14 +10,12 @@ function Login() {
     const navigate = useNavigate();
 
     const validateInputs = () => {
-        // Check for valid email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             setValidationError('Please enter a valid email address.');
             return false;
         }
 
-        // Check for valid password
         const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         if (!passwordRegex.test(password)) {
             setValidationError(
@@ -26,7 +24,7 @@ function Login() {
             return false;
         }
 
-        setValidationError(''); // Clear validation error if all checks pass
+        setValidationError('');
         return true;
     };
 
@@ -34,14 +32,12 @@ function Login() {
         e.preventDefault();
 
         if (!validateInputs()) {
-            return; // Stop submission if validation fails
+            return;
         }
 
         try {
             const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
-            // Store the JWT token
             localStorage.setItem('token', response.data.token);
-            // Redirect to the home page or dashboard after login
             navigate('/');
         } catch (error) {
             setError('Invalid email or password');
@@ -53,7 +49,7 @@ function Login() {
         <div className="form-container">
             <h2>Login</h2>
             {error && <p style={{ color: 'red' }}>{error}</p>}
-            {validationError && <p style={{ color: 'orange' }}>{validationError}</p>} {/* Validation error */}
+            {validationError && <p style={{ color: 'orange' }}>{validationError}</p>}
             <form onSubmit={handleLogin} className="form">
                 <label>Email:</label>
                 <input
@@ -73,6 +69,9 @@ function Login() {
                 />
                 <button type="submit" className="form-button">Login</button>
             </form>
+            <p>
+                <Link to="/forgot-password">Forgot Password?</Link>
+            </p>
             <p>
                 If you're a new user, register here: <Link to="/register">Register</Link>
             </p>
