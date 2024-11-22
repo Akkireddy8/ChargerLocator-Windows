@@ -37,11 +37,23 @@ function Login() {
 
         try {
             const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
-            localStorage.setItem('token', response.data.token);
-            navigate('/');
+            
+            // Check if response has a token
+            if (response.data && response.data.token) {
+                localStorage.setItem('token', response.data.token);
+                setError('');
+                navigate('/'); // Redirect to home page
+            } else {
+                setError('Login failed. Please try again.');
+            }
         } catch (error) {
-            setError('Invalid email or password');
-            console.error('Error logging in', error);
+            // Set specific error messages if available
+            if (error.response && error.response.data && error.response.data.error) {
+                setError(error.response.data.error);
+            } else {
+                setError('An unexpected error occurred. Please try again.');
+            }
+            console.error('Error logging in:', error);
         }
     };
 

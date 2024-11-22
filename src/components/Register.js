@@ -5,21 +5,20 @@ import { useNavigate } from 'react-router-dom';
 function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState(''); // New state for confirm password
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const navigate = useNavigate();
 
     const validateInputs = () => {
-        // Email validation regex
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
         if (!emailRegex.test(email)) {
             setError('Please enter a valid email address.');
             return false;
         }
 
-        // Password validation regex
-        const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         if (!passwordRegex.test(password)) {
             setError(
                 'Password must be at least 8 characters long, include an uppercase letter, a number, and a special character.'
@@ -27,35 +26,39 @@ function Register() {
             return false;
         }
 
-        // Check if passwords match
         if (password !== confirmPassword) {
             setError('Passwords do not match!');
             return false;
         }
 
-        setError(''); // Clear any validation errors if all checks pass
+        setError('');
         return true;
     };
 
     const handleRegister = async (e) => {
         e.preventDefault();
 
-        if (!validateInputs()) {
-            return; // Stop submission if validation fails
-        }
+        if (!validateInputs()) return;
 
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/register', { email, password });
-            setSuccess('Registration successful! Redirecting to login...');
+            const response = await axios.post('http://localhost:5000/api/auth/register', {
+                email,
+                password,
+            });
+
+            setSuccess(response.data.message || 'Registration successful! Redirecting to login...');
             setError('');
 
-            // Redirect to login after successful registration
+            // Redirect to login page after a delay
             setTimeout(() => {
                 navigate('/login');
             }, 2000);
         } catch (err) {
-            setError('Error registering user. Please try again.');
-            console.error('Error registering', err);
+            if (err.response && err.response.data && err.response.data.error) {
+                setError(err.response.data.error); // Backend error message
+            } else {
+                setError('Error registering user. Please try again.');
+            }
         }
     };
 
@@ -89,7 +92,9 @@ function Register() {
                     placeholder="Re-enter your password"
                     required
                 />
-                <button type="submit" className="form-button">Register</button>
+                <button type="submit" className="form-button">
+                    Register
+                </button>
             </form>
         </div>
     );
