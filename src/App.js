@@ -17,13 +17,13 @@ function App() {
   return (
     <Router>
       <div>
-        <nav>
+      <nav>
           {isLoggedIn ? (
             <>
               <Link to="/home">Home</Link>
-              <button onClick={handleLogout} style={{ marginLeft: '10px' }}>
+              <Link to="/" onClick={handleLogout} style={{ marginLeft: '10px', textDecoration: 'none', color: 'blue' }} >
                 Logout
-              </button>
+            </Link>
             </>
           ) : (
             <Link to="/login">Login</Link>
