@@ -5,6 +5,7 @@ import Register from './components/Register';
 import Home from './components/Home';
 import ForgotPassword from './components/forgot-password';
 import SearchStations from './components/Searchstations';
+import Favorites from './components/Favorites';
 import backgroundImage from './background_img.jpg'; // Ensure it's inside src/
 
 import './front_styles.css';
@@ -54,6 +55,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/search-stations" element={<SearchStations />} />
+          <Route path="/favorites" element={<Favorites />} />
         </Routes>
       </div>
     </Router>

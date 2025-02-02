@@ -10,10 +10,17 @@ function Home() {
         navigate('/search-stations'); // Redirect to the search stations page
     };
 
+    const handleFavoritesClick = () => {
+        navigate('/favorites');
+    };
+    
     return (
         <div className="home-container">
             <button onClick={handleFindStations} className="find-button">
                 Find Stations
+            </button>
+            <button onClick={handleFavoritesClick} className="find-button">
+                Go to Favorites
             </button>
         </div>
     );
