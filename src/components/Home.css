@@ -1,0 +1,25 @@
+.home-container {
+    text-align: center;
+    margin-top: 50px;
+}
+
+.find-button {
+    background-color: #4CAF50; /* Green background */
+    color: white; /* White text */
+    padding: 12px 24px;
+    font-size: 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.find-button:hover {
+    background-color: #45a049; /* Darker green */
+    transform: scale(1.05);
+}
+
+.find-button:active {
+    transform: scale(0.95);
+}

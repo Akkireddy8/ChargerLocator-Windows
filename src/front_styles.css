@@ -64,3 +64,14 @@ body {
 .form-button:hover {
     background-color: #45a049;
 }
+body {
+    background-image: url('background_img.jpg'); /* Ensure the image is inside the public folder */
+    background-size: 100% 100%; /* Stretch image to fit the screen */
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
