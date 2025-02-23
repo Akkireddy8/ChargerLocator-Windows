@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favorite EV Stations</title>
+    <link rel="stylesheet" href="./css/header.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .favorites-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .station-card {
+            background-color: white;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .station-card:hover {
+            transform: scale(1.02);
+        }
+
+        .station-card h3 {
+            background-color: #4CAF50;
+            margin-bottom: 10px;
+            color: #ffffff;
+            font-weight: 600;
+            padding: 10px 10px;
+            width: fit-content;
+            border-radius: 8px;
+        }
+
+        .station-card p {
+            margin: 5px 0;
+            text-align: left;
+        }
+
+        .charger-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .charger-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: fit-content; 
+            text-align: left;
+            transition: transform 0.2s ease-in-out;
+            border: 1px solid #a3a3a3;
+        }
+
+        .charger-card:hover {
+            transform: scale(1.01);
+            border: 3px solid #45a049;
+        }
+
+        .charger-card h4 {
+            color: #4CAF50;
+            margin: 5px 0px 5px 0px;
+
+        }
+
+        .charger-card p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .remove-btn {
+            background-color: #FF5733;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .remove-btn:hover {
+            background-color: #D43F00;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            background-color: #45a049;
+        }
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">EV Charger Locator</div>
+        <nav>
+          <ul>
+            <li><a href="dashboard.html">Home</a></li>
+            <li><a href="favorites.html">Favorites</a></li>
+          </ul>
+        </nav>
+        <div class="search-bar">
+          <select>
+            <option>
+                Station Name
+            </option>
+            <option>
+                Charger Adapter
+            </option>
+            <option>
+                Zipcode
+            </option>
+            <option>
+                Distance
+            </option>
+          </select>
+          <input type="text" placeholder="Search for a station...">
+          <button>Search</button>
+        </div>
+      </header>
+    <div class="container">
+        <h3>Favorite Chargers</h3>
+        <div class="favorites-container" id="favoriteStationsList"></div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const favoriteStations = new Set(JSON.parse(localStorage.getItem('favoriteStations')) || []);
+
+            fetch('/station/api/stations')
+                .then(res => res.json())
+                .then(response => {
+                    const stations = response.stations.filter(s => favoriteStations.has(s._id));
+                    const favList = document.getElementById('favoriteStationsList');
+
+                    if (stations.length === 0) {
+                        favList.innerHTML = "<p style='text-align:center; font-size:18px;'>No favorite stations added yet!</p>";
+                        return;
+                    }
+
+                    favList.innerHTML = stations.map(station => `
+                        <div class="station-card">
+                            <h3>${station.name}</h3>
+                            <p><strong>Location:</strong> ${station.latitude}, ${station.longitude}</p>
+                            <p><strong>Address:</strong> ${station.address || "Kansas"}</p>
+                            <p><strong>Services:</strong> ${station.services}</p>
+                            <p><strong>Availability:</strong> ${station.availability || "Available"}</p>
+
+
+                            <div class="charger-container">
+                                ${station.chargers.map(charger => `
+                                    <div class="charger-card">
+                                        <h4>Charger ${charger.chargerId}</h4>
+                                        <p><strong>Type:</strong> ${charger.chargerType}</p>
+                                        <p><strong>Power:</strong> ${charger.powerOutput} kW</p>
+                                        <p><strong>Connector:</strong> ${charger.connectorType || "CCS"}</p>
+                                        <p><strong>Status:</strong> ${charger.status || "Available"}</p>
+                                        <p><strong>Cost:</strong> ${charger.pricing} $/kWh</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <button class="remove-btn" onclick='removeFavorite("${station._id}")'>Remove</button>
+                        </div>
+                    `).join('');
+                });
+        });
+
+        function removeFavorite(stationId) {
+            let favoriteStations = new Set(JSON.parse(localStorage.getItem('favoriteStations')) || []);
+            favoriteStations.delete(stationId);
+            localStorage.setItem('favoriteStations', JSON.stringify([...favoriteStations]));
+            location.reload();
+        }
+    </script>
+</body>
+</html>
