@@ -5,11 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EV Charging Stations</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="./css/header.css">
     <style>
+        *{
+            padding: 0;
+            margin: 0;
+        }
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 0px;
             background-color: #f5f5f5;
             color: #333;
         }
@@ -39,34 +44,205 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
+            max-width: 1200px;
             width: 100%;
+            display: flex;
+            flex-direction: row;
         }
 
         .station-item {
+            flex: 2;
             background-color: white;
             border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin: 30px;
+            box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+            width: fit-content;
         }
 
         .station-item h3 {
-            color: #4CAF50;
+            background-color: #4CAF50;
             margin-bottom: 10px;
+            color: #ffffff;
+            font-weight: 600;
+            padding: 10px 10px;
+            width: fit-content;
+            border-radius: 8px;
         }
+
+        .station-item p {
+            padding: 10px 0px;
+        }
+
+        .charger-details {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .charger-details p {
+            margin: 5px 0;
+        }
+
+        .charger-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .charger-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: fit-content;
+            min-width: 150px;
+            text-align: left;
+            transition: transform 0.2s ease-in-out;
+            border: 1px solid #959595;
+        }
+
+        .charger-card:hover {
+            transform: scale(1.01);
+            border: 3px solid #45a049;
+        }
+
+        .charger-card h4 {
+            color: #4CAF50;
+            margin-bottom: 5px;
+        }
+
+        .charger-card:hover > h4{
+            background-color: #4CAF50;
+            margin-bottom: 10px;
+            color: #ffffff;
+            font-weight: 600;
+            padding: 10px 10px;
+            width: fit-content;
+            border-radius: 8px;
+        }
+
+        .charger-card p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .favorite-btn {
+            background-color: #FF5733;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .favorite-btn:hover {
+            background-color: #D43F00;
+        }        
+
+
+        .search-filter {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-filter input, .search-filter select, .search-filter button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .search-filter button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .search-filter button:hover {
+            background-color: #45a049;
+        }
+        .heart-icon {
+            font-size: 20px;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .heart-icon.favorited {
+            color: red;
+            transform: scale(1.2);
+        }
+
+        .recommend-tag {
+            background-color: #ff9800;
+            color: white;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            font-weight: bold;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
     </style>
 </head>
 <body>
-    <h1>EV Charging Stations</h1>
+    <header>
+        <div class="logo">EV Charger Locator</div>
+        <nav>
+          <ul>
+            <li><a href="#">Home</a></li>
+            <li><a href="favorites.html">Favorites</a></li>
+          </ul>
+        </nav>
+        <div class="search-bar">
+          <select>
+            <option>
+                Station Name
+            </option>
+            <option>
+                Charger Adapter
+            </option>
+            <option>
+                Zipcode
+            </option>
+            <option>
+                Distance
+            </option>
+          </select>
+          <input type="text" placeholder="Search for a station...">
+          <button>Search</button>
+        </div>
+      </header>
+    
+
+      <section class="hero">
+        <h1>Find EV Charging Stations Near You – Fast, Reliable, and Easy!</h1>
+        <button class="btn-glow" onclick="scrollToMap()">Explore Map</button>
+      </section>
     <div class="container">
-        <input type="text" id="searchInput" placeholder="Search by name...">
-        <select id="filterType">
-            <option value="">All Types</option>
-            <option value="Fast">Fast</option>
-            <option value="Slow">Slow</option>
-        </select>
-        <button onclick="searchStations()">Search</button>
+        <div class="search-filter">
+            <input type="text" id="searchInput" placeholder="Search by name...">
+            <select id="filterType">
+                <option value="">All Types</option>
+                <option value="Level 1">Level 1</option>
+                <option value="Level 2">Level 2</option>
+                <option value="Level 3">Level 3</option>
+            </select>
+            <button onclick="searchStations()">Search</button>
+        </div>
         <div id="map"></div>
         <div class="station-list"></div>
     </div>
@@ -88,49 +264,90 @@
         });
 
         let stationMarkers = {};
-        let favoriteStations = new Set();
+        const favoriteStations = new Set(JSON.parse(localStorage.getItem('favoriteStations')) || []);
+        const adapterType = localStorage.getItem('adapter');
 
         async function fetchStations() {
             const res = await fetch('/station/api/stations');
             const response = await res.json();
-            var stations = response.stations;
+            const stations = response.stations;
 
             document.querySelector('.station-list').innerHTML = '';
             stationMarkers = {};
 
             stations.forEach(station => {
                 const isFav = favoriteStations.has(station._id);
+               // console.log(adapterType, station.chargers)
                 const stationMarker = L.marker([station.latitude, station.longitude], { icon: isFav ? favChargerIcon : evChargerIcon })
-                    .addTo(map)
-                    .bindPopup(`<b>${station.name}</b><br>Type: ${station.chargerType}<br>Cost: $${station.cost}`);
-                stationMarkers[station._id] = stationMarker;
+                .addTo(map)
+                .bindPopup(`
+                    <b>${station.name}</b><br>
+                    <strong>Address:</strong> ${station.address || "Not Available"}<br>
+                    <strong>Availability:</strong> ${station.availability || "Available"}<br>
+                    <strong>Chargers:</strong><br>
+                    ${station.chargers.map(charger => `
+                        🔋 <b>Charger ${charger.chargerId}</b><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;⚡ Type: ${charger.chargerType}<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;🟢 Status: ${charger.status || "Available"}<br>
+                        <hr>
+                    `).join('')}
+                `);
 
-                const div = document.createElement('div');
-                div.className = 'station-item';
-                div.innerHTML = `
-                    <h3>${station.name}</h3>
-                    <p>Location: ${station.latitude}, ${station.longitude}</p>
-                    <p>Charger Type: ${station.chargerType}</p>
-                    <p>Cost: $${station.cost}</p>
-                    <p>Services: ${station.services}</p>
-                    <p>Availability: ${station.availability}</p>
-                    <button onclick='toggleFavorite("${station._id}")'>${isFav ? 'Unfavorite' : 'Favorite'}</button>
-                `;
-                document.querySelector('.station-list').appendChild(div);
+            stationMarkers[station._id] = stationMarker;
+
+                
+            const div = document.createElement('div');
+            div.className = 'station-item';
+            div.innerHTML = `
+                <h3>${station.name}</h3>
+                <p><strong>📍 Location:</strong> ${station.latitude}, ${station.longitude}</p>
+                <p><strong>🏠 Address:</strong> ${station.address || "Kansas"}</p>
+                <p><strong>🛠️ Services:</strong> ${station.services}</p>
+                <p><strong>✅ Availability:</strong> ${station.availability || "Available"}</p>
+
+                <div class="charger-container">
+                    ${station.chargers.map(charger => `
+                        <div class="charger-card">
+                            <h4>⚡ Charger ${charger.chargerId} </h4>
+                            <p><strong>🔌 Type:</strong> ${charger.chargerType}</p>
+                            <p><strong>⚡ Power:</strong> ${charger.powerOutput} kW</p>
+                            <p><strong>🔋 Connector:</strong> ${charger.connectorType || "CCS"}</p>
+                            <p><strong>📶 Status:</strong> ${charger.status || "Available"}</p>
+                            <p><strong>💲 Cost:</strong> ${charger.pricing} $/kWh</p>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <button class="favorite-btn" onclick='toggleFavorite("${station._id}", this)'>
+                    ${isFav ? 'Unfavorite' : 'Favorite'}
+                </button>
+            `;
+
+            document.querySelector('.station-list').appendChild(div);
+
             });
         }
 
+
         function searchStations() {
             const searchInput = document.getElementById("searchInput").value.toLowerCase();
-            const filterType = document.getElementById("filterType").value;
+            const filterType = document.getElementById("filterType").value.toLowerCase();
             let foundStation = null;
+
+           // console.log(stationMarkers);
 
             Object.values(stationMarkers).forEach(marker => marker.setOpacity(1));
 
-            for (let station of Object.keys(stationMarkers)) {
-                const marker = stationMarkers[station];
-                if (marker.getPopup().getContent().toLowerCase().includes(searchInput) && 
-                    (!filterType || marker.getPopup().getContent().includes(`Type: ${filterType}`))) {
+            for (let stationId of Object.keys(stationMarkers)) {
+               // console.log(stationId);
+                const marker = stationMarkers[stationId];
+                const popupContent = marker.getPopup().getContent().toLowerCase();
+
+                const matchesName = popupContent.includes(searchInput);
+
+                const matchesChargerType = !filterType || popupContent.includes(`⚡ type: ${filterType}`);
+
+                if (matchesName && matchesChargerType) {
                     foundStation = marker;
                     marker.setOpacity(1);
                 } else {
@@ -144,14 +361,23 @@
             }
         }
 
-        function toggleFavorite(stationId) {
+
+        function scrollToMap() { document.getElementById('map').scrollIntoView({ behavior: 'smooth' }); }
+
+        function toggleFavorite(stationId, buttonElement) {
             if (favoriteStations.has(stationId)) {
                 favoriteStations.delete(stationId);
             } else {
                 favoriteStations.add(stationId);
             }
+
+            localStorage.setItem('favoriteStations', JSON.stringify([...favoriteStations]));
+
+
             fetchStations();
         }
+
+
 
         fetchStations();
     </script>
