@@ -9,8 +9,14 @@
 </head>
 <body>
     <h1>EV Charging Station Management</h1>
-
-    <div id="map"></div>
+    <section class="hero">
+        <h1>Find EV Charging Stations Near You – Fast, Reliable, and Easy!</h1>
+        <button class="btn-glow" onclick="scrollToMap()">Explore Map</button>
+        <button class="btn-glow" onclick="scrollToForm()">Add a Station</button>
+      </section>
+    <section id="map-section">
+        <div id="map" class="map-container"></div>
+      </section>
 
     <!-- Section for Adding/Updating an EV Charging Station -->
     <section class="content" id="add-station">
@@ -141,7 +147,39 @@ document.getElementById('stationForm').addEventListener('submit', async function
     e.target.reset();
     fetchStations();
 });
+async function fetchStations() {
+            const res = await fetch('/station/api/stations');
+            const response = await res.json();
+            const stations = response.stations;
+            
+            const tableBody = document.querySelector('.station-list');
+            tableBody.innerHTML = '';
 
+            stations.forEach(station => {
+                if (!stationMarkers[station._id]) {
+                    const stationMarker = L.marker([station.latitude, station.longitude], { icon: evChargerIcon })
+                        .addTo(map)
+                        .bindPopup(`<b>${station.name}</b><br>Chargers: ${station.totalChargers}<br>Available: ${station.chargers.length}`);
+
+                    stationMarkers[station._id] = stationMarker;
+                }
+
+                const div = document.createElement('div');
+                div.className = 'station-item';
+                console.log(station.chargers.length)
+                div.innerHTML = `
+                    <h3>${station.name}</h3>
+                    <p>Location: ${station.latitude}, ${station.longitude}</p>
+                    <p>Services: ${station.services}</p>
+                    <p>Total Chargers: ${station.totalChargers}</p>
+                    <p>Available Chargers: ${station.chargers.length}</p>
+                    <button onclick='editStation(${JSON.stringify(station)})'>Edit</button>
+                    <button onclick='deleteStation("${station._id}")'>Delete</button>
+                `;
+
+                tableBody.appendChild(div);
+            });
+        }
 
 function editStation(station) {
     document.getElementById('name').value = station.name;
