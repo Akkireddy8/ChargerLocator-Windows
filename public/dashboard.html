@@ -47,18 +47,19 @@
             max-width: 1200px;
             width: 100%;
             display: flex;
-            flex-direction: row;
+            flex-wrap: wrap; 
+            justify-content: space-between; 
         }
 
         .station-item {
-            flex: 2;
+            flex: 1 1 calc(30% - 40px);
             background-color: white;
             border-radius: 10px;
             padding: 30px;
-            margin: 30px;
+            margin: 20px;
             box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
-            width: fit-content;
         }
+
 
         .station-item h3 {
             background-color: #4CAF50;
@@ -102,6 +103,7 @@
             text-align: left;
             transition: transform 0.2s ease-in-out;
             border: 1px solid #959595;
+            overflow-x: scroll;
         }
 
         .charger-card:hover {
@@ -190,6 +192,35 @@
             animation: pulse 1.5s infinite;
         }
 
+        .route-search {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .route-search input {
+            padding: 10px;
+            width: 300px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .route-search button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .route-search button:hover {
+            background-color: #45a049;
+        }
+
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); }
@@ -197,6 +228,11 @@
         }
 
     </style>
+    <link rel="stylesheet" href="./css/chat.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
 </head>
 <body>
     <header>
@@ -205,6 +241,7 @@
           <ul>
             <li><a href="#">Home</a></li>
             <li><a href="favorites.html">Favorites</a></li>
+            <li><a href="index.html">Logout</a></li>
           </ul>
         </nav>
         <div class="search-bar">
@@ -226,59 +263,79 @@
           <button>Search</button>
         </div>
       </header>
-    
 
       <section class="hero">
         <h1>Find EV Charging Stations Near You – Fast, Reliable, and Easy!</h1>
-        <button class="btn-glow" onclick="scrollToMap()">Explore Map</button>
+
+        <div class="route-search">
+            <input type="text" id="destinationInput" placeholder="Enter destination address...">
+            <button onclick="findRoute()">Find Route</button>
+        </div>
+        
       </section>
     <div class="container">
         <div class="search-filter">
-            <input type="text" id="searchInput" placeholder="Search by name...">
-            <select id="filterType">
-                <option value="">All Types</option>
-                <option value="Level 1">Level 1</option>
-                <option value="Level 2">Level 2</option>
-                <option value="Level 3">Level 3</option>
-            </select>
-            <button onclick="searchStations()">Search</button>
         </div>
         <div id="map"></div>
         <div class="station-list"></div>
     </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Chat Icon -->
+    <div id="chat-icon" class="chat-icon">
+        💬
+    </div>
+
+    <!-- Chat Box -->
+    <div id="chat-box" class="chat-box">
+        <div class="chat-header">
+            <span>Chat with Manager</span>
+            <button id="close-chat" class="close-chat-btn">✖</button>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+            
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-message" placeholder="Type a message..." />
+            <button id="send-message">Send</button>
+        </div>
+    </div>
+    
     <script>
-        const map = L.map('map').setView([40.346104, -94.872475], 15);
+        const userAdapterType = JSON.parse(localStorage.getItem('adapters')) || [];
+        const originLatLng = [40.353306, -94.8834];
+        const map = L.map('map').setView(originLatLng, 20);
+    
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
-
+    
         const evChargerIcon = L.icon({
-            iconUrl: './images/ev-charger-icon.png', 
+            iconUrl: './images/ev-charger-icon.png',
             iconSize: [32, 32],
         });
-
+    
         const favChargerIcon = L.icon({
-            iconUrl: './images/fav-ev-charger-icon.png', 
+            iconUrl: './images/fav-ev-charger-icon.png',
             iconSize: [32, 32],
         });
-
+    
         let stationMarkers = {};
+        let routingControl = null;
         const favoriteStations = new Set(JSON.parse(localStorage.getItem('favoriteStations')) || []);
-        const adapterType = localStorage.getItem('adapter');
-
+    
         async function fetchStations() {
             const res = await fetch('/station/api/stations');
             const response = await res.json();
             const stations = response.stations;
-
+    
             document.querySelector('.station-list').innerHTML = '';
             stationMarkers = {};
-
+    
             stations.forEach(station => {
                 const isFav = favoriteStations.has(station._id);
-               // console.log(adapterType, station.chargers)
-                const stationMarker = L.marker([station.latitude, station.longitude], { icon: isFav ? favChargerIcon : evChargerIcon })
+                const stationMarker = L.marker([station.latitude, station.longitude], {
+                    icon: isFav ? favChargerIcon : evChargerIcon
+                })
                 .addTo(map)
                 .bindPopup(`
                     <b>${station.name}</b><br>
@@ -292,94 +349,225 @@
                         <hr>
                     `).join('')}
                 `);
-
-            stationMarkers[station._id] = stationMarker;
-
-                
-            const div = document.createElement('div');
-            div.className = 'station-item';
-            div.innerHTML = `
-                <h3>${station.name}</h3>
-                <p><strong>📍 Location:</strong> ${station.latitude}, ${station.longitude}</p>
-                <p><strong>🏠 Address:</strong> ${station.address || "Kansas"}</p>
-                <p><strong>🛠️ Services:</strong> ${station.services}</p>
-                <p><strong>✅ Availability:</strong> ${station.availability || "Available"}</p>
-
-                <div class="charger-container">
-                    ${station.chargers.map(charger => `
-                        <div class="charger-card">
-                            <h4>⚡ Charger ${charger.chargerId} </h4>
-                            <p><strong>🔌 Type:</strong> ${charger.chargerType}</p>
-                            <p><strong>⚡ Power:</strong> ${charger.powerOutput} kW</p>
-                            <p><strong>🔋 Connector:</strong> ${charger.connectorType || "CCS"}</p>
-                            <p><strong>📶 Status:</strong> ${charger.status || "Available"}</p>
-                            <p><strong>💲 Cost:</strong> ${charger.pricing} $/kWh</p>
-                        </div>
-                    `).join('')}
-                </div>
-                
-                <button class="favorite-btn" onclick='toggleFavorite("${station._id}", this)'>
-                    ${isFav ? 'Unfavorite' : 'Favorite'}
-                </button>
-            `;
-
-            document.querySelector('.station-list').appendChild(div);
-
+    
+                stationMarkers[station._id] = { marker: stationMarker, data: station };
+    
+                const div = document.createElement('div');
+                div.className = 'station-item';
+                div.innerHTML = `
+                    <h3>${station.name}</h3>
+                    <p><strong>📍 Location:</strong> ${station.latitude}, ${station.longitude}</p>
+                    <p><strong>🏠 Address:</strong> ${station.address || "Kansas"}</p>
+                    <p><strong>🛠️ Services:</strong> ${station.services}</p>
+                    <p><strong>✅ Availability:</strong> ${station.availability || "Available"}</p>
+    
+                    <div class="charger-container">
+                        ${station.chargers.map(charger => `
+                            <div class="charger-card">
+                                <h4>⚡ Charger ${charger.chargerId} </h4>
+                                <p><strong>🔌 Type:</strong> ${charger.chargerType}</p>
+                                <p><strong>🔋 Power:</strong> ${charger.powerOutput} kW</p>
+                                <p><strong>📶 Status:</strong> ${charger.status || "Available"}</p>
+                                <p><strong>💲 Cost:</strong> ${charger.pricing} $/kWh</p>
+                            </div>
+                        `).join('')}
+                    </div>
+    
+                    <button class="route-btn" onclick='createRoute(${station.latitude}, ${station.longitude})'>🚗 Get Route</button>
+                    <button class="favorite-btn" onclick='toggleFavorite("${station._id}", this)'>
+                        ${isFav ? 'Unfavorite' : 'Favorite'}
+                    </button>
+                `;
+    
+                document.querySelector('.station-list').appendChild(div);
             });
         }
-
-
-        function searchStations() {
-            const searchInput = document.getElementById("searchInput").value.toLowerCase();
-            const filterType = document.getElementById("filterType").value.toLowerCase();
-            let foundStation = null;
-
-           // console.log(stationMarkers);
-
-            Object.values(stationMarkers).forEach(marker => marker.setOpacity(1));
-
-            for (let stationId of Object.keys(stationMarkers)) {
-               // console.log(stationId);
-                const marker = stationMarkers[stationId];
-                const popupContent = marker.getPopup().getContent().toLowerCase();
-
-                const matchesName = popupContent.includes(searchInput);
-
-                const matchesChargerType = !filterType || popupContent.includes(`⚡ type: ${filterType}`);
-
-                if (matchesName && matchesChargerType) {
-                    foundStation = marker;
-                    marker.setOpacity(1);
-                } else {
-                    marker.setOpacity(0.5);
+    
+        function createRoute(destinationLat, destinationLng) {
+            if (routingControl) {
+                map.removeControl(routingControl);
+            }
+    
+            const userLocation = L.latLng(originLatLng[0], originLatLng[1]);
+            const destination = L.latLng(destinationLat, destinationLng);
+    
+            findNearestCharger([userLocation, destination], function (nearestCharger) {
+                let waypoints = [userLocation];
+    
+                if (nearestCharger) {
+                    waypoints.push(L.latLng(nearestCharger.latitude, nearestCharger.longitude));
                 }
+    
+                waypoints.push(destination);
+    
+                routingControl = L.Routing.control({
+                    waypoints: waypoints,
+                    routeWhileDragging: true
+                }).addTo(map);
+    
+                if (nearestCharger) {
+                    highlightStation(nearestCharger);
+                }
+    
+                scrollToMap();
+            });
+        }
+    
+        async function findRoute() {
+            const destination = document.getElementById("destinationInput").value;
+            if (!destination) {
+                alert("Please enter a destination address.");
+                return;
             }
 
-            if (foundStation) {
-                map.setView(foundStation.getLatLng(), 18);
-                foundStation.openPopup();
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${destination}`);
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    alert("Location not found. Try a different address.");
+                    return;
+                }
+
+                const destinationLatLng = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+
+            
+                findNearestCharger([L.latLng(originLatLng[0], originLatLng[1]), L.latLng(destinationLatLng[0], destinationLatLng[1])], function(nearestCharger) {
+                    const waypoints = [L.latLng(originLatLng)];
+                    if (nearestCharger) {
+                        waypoints.push(L.latLng(nearestCharger.latitude, nearestCharger.longitude));
+                    }
+                    waypoints.push(L.latLng(destinationLatLng));
+
+                    if (routingControl) {
+                        map.removeControl(routingControl);
+                    }
+
+                    routingControl = L.Routing.control({
+                        waypoints: waypoints,
+                        routeWhileDragging: true
+                    }).addTo(map);
+
+                    if (nearestCharger) {
+                        highlightStation(nearestCharger._id);
+                    }
+
+                    map.setView(destinationLatLng, 12);
+                });
+
+            } catch (error) {
+                console.error("Error fetching location:", error);
+                alert("Failed to fetch location. Try again later.");
             }
         }
 
+    
+        function findNearestCharger(waypoints, callback) {
+            let nearestCharger = null;
+            let minDistance = Infinity;
 
-        function scrollToMap() { document.getElementById('map').scrollIntoView({ behavior: 'smooth' }); }
+            Object.values(stationMarkers).forEach(({ data }) => {
+                
+                const matchingCharger = data.chargers.find(charger => {
+                    
+                    return userAdapterType.some(adapter => charger.chargerType.toLowerCase().includes(adapter.toLowerCase()));
+                });
 
+                console.log("User Adapter Type:", userAdapterType);
+                console.log("Available Chargers:", data.chargers);
+                console.log("Matching Charger:", matchingCharger);
+
+                if (matchingCharger) {
+                    const chargerLatLng = L.latLng(data.latitude, data.longitude);
+                    const distance = waypoints[0].distanceTo(chargerLatLng);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearestCharger = data;
+                    }
+                }
+            });
+
+
+            callback(nearestCharger);
+        }
+
+
+    
+        function highlightStation(stationId) {
+            Object.values(stationMarkers).forEach(({ marker, data }) => {
+                if (data._id === stationId) {
+                    marker.setIcon(favChargerIcon);
+                    marker.openPopup();
+                } else {
+                    marker.setIcon(evChargerIcon);
+                }
+            });
+        }
+    
+        function searchStations() {
+            const searchInput = document.querySelector('.search-bar input').value.toLowerCase();
+            const searchFilter = document.querySelector('.search-bar select').value;
+            let firstResultLatLng = null;
+    
+            Object.values(stationMarkers).forEach(({ marker, data }) => {
+                let matchesSearch = false;
+    
+                switch (searchFilter) {
+                    case "Station Name":
+                        matchesSearch = data.name.toLowerCase().includes(searchInput);
+                        break;
+                    case "Charger Adapter":
+                        matchesSearch = data.chargers.some(charger => charger.chargerType.toLowerCase().includes(searchInput));
+                        break;
+                    case "Zipcode":
+                        matchesSearch = data.zipcode && data.zipcode.toLowerCase().includes(searchInput);
+                        break;
+                    case "Distance":
+                        console.log('distance button')
+                        break;
+                }
+    
+                if (matchesSearch) {
+                    marker.setOpacity(1);
+                    marker.addTo(map);
+                    if (!firstResultLatLng) {
+                        firstResultLatLng = [data.latitude, data.longitude];
+                    }
+                } else {
+                    map.removeLayer(marker);
+                }
+            });
+    
+            document.querySelectorAll('.station-item').forEach(item => {
+                item.style.display = item.innerHTML.toLowerCase().includes(searchInput) ? 'block' : 'none';
+            });
+    
+            if (firstResultLatLng) {
+                map.setView(firstResultLatLng, 25);
+                scrollToMap()
+            }
+        }
+    
+        function scrollToMap() {
+            document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+        }
+    
         function toggleFavorite(stationId, buttonElement) {
             if (favoriteStations.has(stationId)) {
                 favoriteStations.delete(stationId);
             } else {
                 favoriteStations.add(stationId);
             }
-
             localStorage.setItem('favoriteStations', JSON.stringify([...favoriteStations]));
-
-
             fetchStations();
         }
-
-
-
+    
+        document.querySelector('.search-bar button').addEventListener('click', searchStations);
+    
         fetchStations();
     </script>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="./js/chat.js"></script>
 </body>
 </html>
