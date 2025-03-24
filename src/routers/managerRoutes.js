@@ -6,9 +6,10 @@ const Controllers = require('../controllers/managerControllers.js')
 router.get('/test', (req,res)=>{
     res.send({ response : "Server is running"})
 })
+router.get('/getUsers', Controllers.getUsers);
 
-router.post('/login', Controllers.login)  // Login
-router.post('/register', Controllers.register) // Register
+router.post('/login', Controllers.login) ; // Login
+router.post('/register', Controllers.register); // Register
 
 
 
