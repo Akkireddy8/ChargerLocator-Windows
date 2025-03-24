@@ -6,24 +6,62 @@
     <title>EV Station Management</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="./css/dashboard.css">
+    <link rel="stylesheet" href="./css/chat.css">
 </head>
 <body>
-    <h1>EV Charging Station Management</h1>
-    <section class="hero">
+    <header>
+        <div class="logo">EV Charger Locator</div>
+        <nav>
+          <ul>
+            <li><a href="#">Home</a></li>
+            <li><a href="#map">Map</a></li>
+            <li><a href="#add-station">Add Station</a></li>
+            <li><a href="#manage-stations">Manage Stations</a></li>
+            <li><a href="index.html">Logout</a></li>
+          </ul>
+        </nav>
+        <div class="search-bar">
+          <select>
+            <option>
+                Station Name
+            </option>
+            <option>
+                Charger Adapter
+            </option>
+            <option>
+                Zipcode
+            </option>
+            <option>
+                Distance
+            </option>
+          </select>
+          <input type="text" placeholder="Search for a station...">
+          <button>Search</button>
+        </div>
+      </header>
+    
+
+      <section class="hero">
         <h1>Find EV Charging Stations Near You – Fast, Reliable, and Easy!</h1>
         <button class="btn-glow" onclick="scrollToMap()">Explore Map</button>
         <button class="btn-glow" onclick="scrollToForm()">Add a Station</button>
       </section>
-    <section id="map-section">
+
+      <section id="map-section">
         <div id="map" class="map-container"></div>
       </section>
 
-    <!-- Section for Adding/Updating an EV Charging Station -->
     <section class="content" id="add-station">
         <div class="form-container">
             <form id="stationForm">
                 <label for="name">Station Name:</label>
                 <input type="text" id="name" name="name" required />
+
+                <label for="address">Address:</label>
+                <input type="text" id="address" name="address" required />
+
+                <label for="zipcode">Zipcode:</label>
+                <input type="text" id="zipcode" name="zipcode" required />
 
                 <label for="latitude">Latitude:</label>
                 <input type="text" id="latitude" name="latitude" readonly required />
@@ -52,102 +90,138 @@
         </div>
     </section>
 
-        <div class="station-list">
+    <div class="station-list" id="manage-stations">
 
+    </div>
+
+    <!-- Chat Icon -->
+    <div id="chat-icon" class="chat-icon">
+        💬
+    </div>
+
+    <div id="chat-box" class="chat-box">
+        <div class="chat-header">
+            <span>Chat with User</span>
+            <button id="close-chat" class="close-chat-btn">✖</button>
         </div>
-  
+        <div id="chat-messages" class="chat-messages">
+            
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-message" placeholder="Type a message..." />
+            <button id="send-message">Send</button>
+        </div>
+    </div>
+
+
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+
+        const chargerTypes = [
+            { name: "Level 1", description: "AC Charging, Up to 2 kW" },
+            { name: "Level 2", description: "AC Charging, Up to 22 kW" },
+            { name: "Level 3", description: "DC Fast Charging, Up to 50 kW" },
+            { name: "CHAdeMO", description: "DC Fast Charging, 50-100 kW" },
+            { name: "CCS Type 1", description: "DC Fast Charging, Up to 350 kW" },
+            { name: "CCS Type 2", description: "DC Fast Charging, Up to 360 kW" },
+            { name: "Tesla Supercharger", description: "DC Fast Charging, Up to 325 kW" },
+            { name: "Bharat AC-001", description: "AC Charging, Up to 3.3 kW" },
+            { name: "Bharat DC-001", description: "DC Fast Charging, Up to 15 kW" },
+            { name: "GB/T", description: "DC Fast Charging, Up to 250 kW" },
+        ];
        
-const map = L.map('map').setView([40.346104, -94.872475], 15);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-}).addTo(map);
+        const map = L.map('map').setView([40.346104, -94.872475], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
 
-const evChargerIcon = L.icon({
-    iconUrl: './images/ev-charger-icon.png', 
-    iconSize: [32, 32],
-});
+        const evChargerIcon = L.icon({
+            iconUrl: './images/ev-charger-icon.png', 
+            iconSize: [32, 32],
+        });
 
-let marker = null;
-let stationMarkers = {};
-
-
-map.on('click', function (e) {
-    const { lat, lng } = e.latlng;
-
-    if (marker) {
-        marker.setLatLng([lat, lng]);
-    } else {
-        marker = L.marker([lat, lng]).addTo(map);
-    }
-
-    document.getElementById('latitude').value = lat;
-    document.getElementById('longitude').value = lng;
-});
+        let marker = null;
+        let stationMarkers = {};
 
 
-async function fetchStations() {
-    const res = await fetch('/station/api/stations');
-    const response = await res.json();
-    var stations = response.stations;
+        async function fetchAddress(lat, lng) {
+            try {
+                const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=d8747362fd854b58b22100261f9e9b7f`);
+                const data = await response.json();
+                if (data.results && data.results.length > 0) {
+                    const addressDetails = data.results[0].components;
+                    const formattedAddress = data.results[0].formatted;
+                    const zipcode = addressDetails.postcode || "N/A";
 
-    document.querySelector('.station-list').innerHTML = '';
-
-    stations.forEach(station => {
-        if (station.availability === "Available") {
-            if (!stationMarkers[station._id]) { 
-                const stationMarker = L.marker([station.latitude, station.longitude], { icon: evChargerIcon })
-                    .addTo(map)
-                    .bindPopup(`<b>${station.name}</b><br>Type: ${station.chargerType}<br>Cost: $${station.cost}`);
-
-                stationMarkers[station._id] = stationMarker;
+                    document.getElementById('address').value = formattedAddress;
+                    document.getElementById('zipcode').value = zipcode;
+                } else {
+                    console.error("No address found for the given coordinates.");
+                }
+            } catch (error) {
+                console.error("Error fetching address:", error);
             }
         }
 
-        const div = document.createElement('div');
-        div.className = 'station-item';
 
-        div.innerHTML = `
-            <h3>${station.name}</h3>
-            <p>Location: ${station.latitude}, ${station.longitude}</p>
-            <p>Charger Type: ${station.chargerType}</p>
-            <p>Cost: $${station.cost}</p>
-            <p>Services: ${station.services}</p>
-            <p>Availability: ${station.availability}</p>
-            <button onclick='editStation(${JSON.stringify(station)})'>Edit</button>
-            <button onclick='deleteStation("${station._id}")'>Delete</button>
-        `;
+        map.on('click', function (e) {
+            const { lat, lng } = e.latlng;
 
-        document.querySelector('.station-list').appendChild(div);
-    });
-}
+            if (marker) {
+                marker.setLatLng([lat, lng]);
+            } else {
+                marker = L.marker([lat, lng]).addTo(map);
+            }
 
-document.getElementById('stationForm').addEventListener('submit', async function (e) {
-    e.preventDefault();
-
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
-
-    if (data._id) {
-        await fetch(`/station/api/stations/${data._id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+            fetchAddress(lat, lng);
         });
-    } else {
-        await fetch('/station/api/stations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-    }
 
-    e.target.reset();
-    fetchStations();
-});
-async function fetchStations() {
+
+        document.getElementById('stationForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            let chargers = Array.from(document.querySelectorAll('.Charger')).flatMap(charger => {
+                const chargerType = charger.querySelector('.charger-type').value;
+                const powerOutput = parseFloat(charger.querySelector('.power-output').value);
+                const pricing = parseFloat(charger.querySelector('.pricing').value);
+                const numChargers = parseInt(charger.querySelector('.numChargers').value);
+
+                return Array.from({ length: numChargers }, (_, index) => ({
+                    chargerType,
+                    powerOutput,
+                    pricing,
+                }));
+            });
+
+            data.chargers = chargers;
+
+            if (data._id) {
+                await fetch(`/station/api/stations/${data._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+            } else {
+                await fetch('/station/api/stations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+            }
+
+            e.target.reset();
+            window.location.reload(true);
+        });
+
+
+
+        async function fetchStations() {
             const res = await fetch('/station/api/stations');
             const response = await res.json();
             const stations = response.stations;
@@ -161,7 +235,7 @@ async function fetchStations() {
                         .addTo(map)
                         .bindPopup(`<b>${station.name}</b><br>Chargers: ${station.totalChargers}<br>Available: ${station.chargers.length}`);
 
-                    stationMarkers[station._id] = stationMarker;
+                    stationMarkers[station._id] = { marker: stationMarker, data: station };
                 }
 
                 const div = document.createElement('div');
@@ -181,40 +255,166 @@ async function fetchStations() {
             });
         }
 
-function editStation(station) {
-    document.getElementById('name').value = station.name;
-    document.getElementById('latitude').value = station.latitude;
-    document.getElementById('longitude').value = station.longitude;
-    document.getElementById('chargerType').value = station.chargerType;
-    document.getElementById('cost').value = station.cost;
-    document.getElementById('services').value = station.services;
-    document.getElementById('availability').value = station.availability;
+        function editStation(station) {
+            console.log(station)
+            document.getElementById('name').value = station.name;
+            document.getElementById('latitude').value = station.latitude;
+            document.getElementById('longitude').value = station.longitude;
+            document.getElementById('services').value = station.services;
+            document.getElementById('address').value = station.address;
+            document.getElementById('zipcode').value = station.zipcode;
 
 
-    const hiddenIdField = document.createElement('input');
-    hiddenIdField.type = 'hidden';
-    hiddenIdField.id = '_id';
-    hiddenIdField.name = '_id';
-    hiddenIdField.value = station._id;
+            let hiddenIdField = document.getElementById('_id');
+            if (!hiddenIdField) {
+                hiddenIdField = document.createElement('input');
+                hiddenIdField.type = 'hidden';
+                hiddenIdField.id = '_id';
+                hiddenIdField.name = '_id';
+                document.getElementById('stationForm').appendChild(hiddenIdField);
+            }
+            hiddenIdField.value = station._id;
 
-    if (!document.getElementById('_id')) {
-        document.getElementById('stationForm').appendChild(hiddenIdField);
-    }
-}
+            const chargerList = document.getElementById('chargerList');
+            chargerList.innerHTML = '';
 
-async function deleteStation(id) {
-    await fetch(`/station/api/stations/${id}`, { method: 'DELETE' });
+            station.chargers.forEach((charger) => {
+                const div = document.createElement('div');
+                div.className = 'Charger';
+                div.innerHTML = `
+                    <input type="text" class="charger-id" value="${charger.chargerId}" readonly>
+                    <select class="charger-type">
+                        <option value="Level 1" ${charger.chargerType === "Level 1" ? "selected" : ""}>Level 1</option>
+                        <option value="Level 2" ${charger.chargerType === "Level 2" ? "selected" : ""}>Level 2</option>
+                        <option value="Level 3" ${charger.chargerType === "Level 3" ? "selected" : ""}>Level 3</option>
+                    </select>
+                    <input type="number" class="power-output" value="${charger.powerOutput}" placeholder="Power Output (kW)">
+                    <input type="number" class="pricing" value="${charger.pricing}" placeholder="Pricing per kWh">
+                    <button type="button" class="btn-remove-charger" onclick="removeCharger(this, '${station._id}', '${charger.chargerId}')"> Remove </button>
+                `;
+                chargerList.appendChild(div);
+            });
+        }
 
-    if (stationMarkers[id]) {
-        map.removeLayer(stationMarkers[id]);
-        delete stationMarkers[id]; 
-    }
 
-    fetchStations();
-}
+        async function deleteStation(id) {
+            await fetch(`/station/api/stations/${id}`, { method: 'DELETE' });
 
-fetchStations();
+            if (stationMarkers[id]) {
+                map.removeLayer(stationMarkers[id]);
+                delete stationMarkers[id]; 
+            }
+
+            fetchStations();
+        }
+
+
+        function scrollToMap() { document.getElementById('map-section').scrollIntoView({ behavior: 'smooth' }); }
+        function scrollToForm() { document.getElementById('add-station').scrollIntoView({ behavior: 'smooth' }); }
+
+
+
+        function addCharger(existingCharger = {}) {
+            let container = document.getElementById('chargerList');
+            let div = document.createElement('div');
+            div.className = 'Charger';
+
+            div.innerHTML = `
+                <input type="text" class="charger-id" value="${existingCharger.chargerId || ''}" placeholder="Charger ID" required>
+                <select class="charger-type"></select>
+                <input type="number" class="power-output" value="${existingCharger.powerOutput || ''}" placeholder="Power Output (kW)">
+                <input type="number" class="pricing" value="${existingCharger.pricing || ''}" placeholder="Pricing per kWh">
+                <input type="number" value="1" class="numChargers" name="numChargers" min="1" placeholder="Enter number of chargers" required />
+                <button type="button" class="btn-remove-charger" onclick="remove(this)">Remove</button>
+            `;
+
+
+            container.appendChild(div);
+
+            const selectElement = div.querySelector('.charger-type');
+            populateChargerTypes(selectElement, existingCharger.chargerType);
+        }
+
+
+        function populateChargerTypes(selectElement, selectedType = "") {
+            selectElement.innerHTML = "";
+            chargerTypes.forEach(charger => {
+                const option = document.createElement("option");
+                option.value = charger.name;
+                option.textContent = `${charger.name} (${charger.description})`;
+                if (charger.name === selectedType) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        }
+
+        async function removeCharger(button, stationId, chargerId) {
+            try {
+                await fetch(`/station/api/stations/${stationId}/chargers/${chargerId}`, { method: 'DELETE' });
+                fetchStations();
+                button.parentElement.remove();
+            } catch (error) {
+                console.error('Error deleting charger:', error);
+            }
+        }
+
+        async function remove(button) {
+            button.parentElement.remove();
+        }
+
+        function searchStations() {
+            const searchInput = document.querySelector('.search-bar input').value.toLowerCase();
+            const searchFilter = document.querySelector('.search-bar select').value;
+            let firstResultLatLng = null;
+            if(searchInput == ""){
+                return alert("Search field is empty...")
+            }
+            Object.values(stationMarkers).forEach(({ marker, data }) => {
+                let matchesSearch = false;
+                console.log(searchFilter)
+                switch (searchFilter) {
+                    case "Station Name":
+                        matchesSearch = data.name.toLowerCase().includes(searchInput);
+                      // console.log(matchesSearch, data.name, searchInput)
+                        break;
+                    case "Charger Adapter":
+                        matchesSearch = data.chargers.some(charger => charger.chargerType.toLowerCase().includes(searchInput));
+                        break;
+                    case "Zipcode":
+                        matchesSearch = data.zipcode && data.zipcode.toLowerCase().includes(searchInput);
+                        break;
+                    case "Distance":
+                        console.log('distance button')
+                        break;
+                }
+    
+                if (matchesSearch) {
+                    marker.setOpacity(1);
+                    marker.addTo(map);
+                    if (!firstResultLatLng) {
+                        firstResultLatLng = [data.latitude, data.longitude];
+                    }
+                } 
+            });
+    
+            document.querySelectorAll('.station-item').forEach(item => {
+                item.style.display = item.innerHTML.toLowerCase().includes(searchInput) ? 'block' : 'block';
+            });
+    
+            if (firstResultLatLng) {
+                map.setView(firstResultLatLng, 25);
+                scrollToMap()
+            }
+        }
+
+        document.querySelector('.search-bar button').addEventListener('click', searchStations);
+
+
+        fetchStations();
 
     </script>
+   <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="./js/chat.js"></script>
 </body>
 </html>
