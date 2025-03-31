@@ -512,7 +512,7 @@
     
             Object.values(stationMarkers).forEach(({ marker, data }) => {
                 let matchesSearch = false;
-    
+                // Added search functiality for name,charger type, zip code and distance
                 switch (searchFilter) {
                     case "Station Name":
                         matchesSearch = data.name.toLowerCase().includes(searchInput);
@@ -538,7 +538,7 @@
                     map.removeLayer(marker);
                 }
             });
-    
+            
             document.querySelectorAll('.station-item').forEach(item => {
                 item.style.display = item.innerHTML.toLowerCase().includes(searchInput) ? 'block' : 'none';
             });
