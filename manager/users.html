@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Station Management</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="./css/dashboard.css">
+    <link rel="stylesheet" href="./css/chat.css">
+    <style>
+
+        table {
+            width: 80%;
+            margin: 60px auto;
+            border-collapse: collapse;
+            animation: fadeIn 1s ease-in-out;
+            
+        }
+        table th{
+            background-color: #1e90ff;
+            color: white;
+        }
+
+        table th, table td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #000000;
+        }
+
+        table th {
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .search-bar input {
+            margin: 10px;
+            padding: 5px;
+        }
+        .table-chat-icon {
+            display: none;
+            cursor: pointer;
+            color: #007bff;
+        }
+
+        tr:hover .table-chat-icon {
+            display: inline !important;
+        }
+
+        .chat-box {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .chat-header {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .chat-header span{
+            text-align: center;
+        }
+
+        .chat-messages {
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+
+        .chat-input {
+            padding: 10px;
+            display: flex;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 5px;
+            margin-right: 10px;
+        }
+
+        .chat-input button {
+            padding: 5px;
+        }
+        .td-none{
+            border: none !important;
+            padding: 0px !important;
+            margin: auto;
+        }
+        .td-none:hover{
+            border: none !important;
+            background-color: #007bff;
+            
+        }
+        .chat-img{
+            height: 30px;
+            width: 30px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">EV Charger Locator</div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html">Home</a></li>
+                <li><a href="#">Users</a></li>
+                <li><a href="index.html">Logout</a></li>
+            </ul>
+        </nav>
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search for a user...">
+            <button onclick="filterUsers()">Search</button>
+        </div>
+    </header>
+
+    <div id="user-list-container">
+        <table id="user-list">
+            <thead>
+                <tr>
+                    <th onclick="sortTable()">Email</th>
+                    <th>Contact Number</th>
+                    <th>Vehicles</th>
+                </tr>
+            </thead>
+            <tbody id="user-table-body">
+                
+            </tbody>
+        </table>
+    </div>
+    <div id="chat-icon" class="chat-icon">
+        💬
+    </div>
+
+    <div id="chat-box" class="chat-box">
+        <div class="chat-header">
+            <span>Chat with User</span>
+            <button id="close-chat" class="close-chat-btn">✖</button>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+            
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-message" placeholder="Type a message..." />
+            <button id="send-message">Send</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="./js/chat.js"></script>
+    <script>
+        var users = []
+        async function getUsers() {
+            try {
+                const res = await fetch('/manager/api/getUsers');
+                const response = await res.json();
+                console.log(response)
+                users = response.users;
+                populateUserTable(users);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        }
+
+        function populateUserTable(users) {
+            const tableBody = document.getElementById('user-table-body');
+            tableBody.innerHTML = '';
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.id=user._id;
+                const emailCell = document.createElement('td');
+                emailCell.textContent = user.email;
+                row.appendChild(emailCell);
+                const contactCell = document.createElement('td');
+                contactCell.textContent = user.phoneNumber;
+                row.appendChild(contactCell);
+                const vehiclesCell = document.createElement('td');
+                vehiclesCell.textContent = user.vehicles.map(vehicle => `${vehicle.model} (${vehicle.adapterTypes.join(', ')})`).join('; ');
+                row.appendChild(vehiclesCell);
+
+                const chatIconCell = document.createElement('td');
+                chatIconCell.classList.add('td-none');
+                const chatIcon = document.createElement('div');
+                chatIcon.classList.add('table-chat-icon');
+                const img = document.createElement('img');
+                img.src='./images/message.png'
+                img.classList.add('chat-img');
+                chatIcon.append(img);
+                chatIcon.onclick = () => openChat(user.email, user._id);
+                chatIconCell.appendChild(chatIcon);
+                row.appendChild(chatIconCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        function sortTable() {
+            const table = document.getElementById('user-list');
+            const rows = Array.from(table.rows).slice(1);
+            const sortedRows = rows.sort((rowA, rowB) => {
+                const nameA = rowA.cells[0].textContent.toLowerCase();
+                const nameB = rowB.cells[0].textContent.toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+
+            sortedRows.forEach(row => table.appendChild(row));
+        }
+
+        function filterUsers() {
+            const searchInput = document.getElementById('search-input').value.toLowerCase();
+
+            const rows = document.querySelectorAll('#user-list tbody tr');
+            rows.forEach(row => {
+                const cells = Array.from(row.cells);
+                let matches = false;
+                matches = cells[0].textContent.toLowerCase().includes(searchInput);
+
+                if (matches) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        async function openChat(userName, id) {
+            const chatBox = document.getElementById('chat-box');
+            chatBox.style.display = 'block';
+            document.querySelector('.chat-header span').textContent = `${userName}`;
+            chatWithUserMail = userName;
+            chatWithUserId = id;
+            const doc = document.getElementById(id);
+            if (doc) {
+                const chatIcon = doc.querySelector('.table-chat-icon img');
+                if (chatIcon) {
+                    chatIcon.src = './images/message.png';
+                    doc.querySelector('.table-chat-icon').style.display = 'none';
+                }
+            }
+
+            await loadUserChat(id, userName)
+        }
+
+        
+        document.getElementById('close-chat').addEventListener('click', () => {
+            document.getElementById('chat-box').style.display = 'none';
+            const doc = document.getElementById(chatWithUserId);
+            if (doc) {
+                const chatIcon = doc.querySelector('.table-chat-icon img');
+                if (chatIcon) {
+                    chatIcon.src = './images/message.png';
+                    doc.querySelector('.table-chat-icon').style.display = 'none';
+                }
+                chatWithUserMail = '';
+            }
+        });
+
+        getUsers();
+    </script>
+</body>
+</html>
