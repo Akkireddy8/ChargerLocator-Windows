@@ -8,6 +8,8 @@ const sendMessageBtn = document.getElementById('send-message');
 const chatMessages = document.getElementById('chat-messages');
 const chatImg = document.getElementById('chat-img');
 
+let unreadMessageCount = 0;
+
 var userId = localStorage.getItem('userId');
 var userEmail = localStorage.getItem('email');
 
@@ -15,8 +17,14 @@ socket.emit('setUserId', { userId });
 
 chatIcon.addEventListener('click', () => {
    chatBox.style.display = 'block';
-   scrollToBottom();
-   chatImg.src = './images/message.png';
+
+   unreadMessageCount = 0;
+
+   const notificationBadge = document.querySelector('.chat-icon span');
+   notificationBadge.textContent = '0';
+   notificationBadge.style.display = 'none';
+  // scrollToBottom();
+  // chatImg.src = './images/message.png';
 });
 
 socket.on('chatHistory', (data) => {
@@ -30,9 +38,16 @@ socket.on('chatHistory', (data) => {
 socket.on('userReceiveMessage', (data) => {
    if (data.userSocketId !== socket.id) {
       addMessageToChat(`${data.message}`, 'left', new Date());
-   }
-   if (chatBox.style.display === '' || chatBox.style.display === 'none') {
-      chatImg.src = './images/new-message.png';
+      
+      if (chatBox.style.display === '' || chatBox.style.display === 'none') {
+
+         unreadMessageCount++;
+         const notificationBadge = document.querySelector('.chat-icon span');
+         notificationBadge.textContent = unreadMessageCount;
+         notificationBadge.style.display = 'block';
+         
+       //  chatImg.src = './images/new-message.png';
+      }
    }
 });
 
