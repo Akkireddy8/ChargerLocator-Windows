@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Charger Locator - Sign Up</title>
     <link rel="stylesheet" href="./css/register.css">
+    <script src="https://kit.fontawesome.com/adc099a9fe.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="container">
         <h1>User - Sign Up</h1>
         <form id="signupForm">
+            <!-- User Details -->
             <div class="form-group">
                 <input type="email" id="email" name="email" placeholder="Enter your email" required>
             </div>
@@ -22,16 +24,32 @@
             <div class="form-group">
                 <input type="tel" id="phone" name="phoneNumber" placeholder="Enter your phone number" required>
             </div>
-            <div class="form-group">
-                <input type="text" id="vehicleModel" name="vehicleModel" placeholder="Enter vehicle model" required>
+
+            <!-- Vehicle Details -->
+            <h2>Vehicles</h2>
+            <div id="vehiclesContainer">
+                <!-- First Vehicle Entry -->
+                <div class="vehicle-entry">
+                    <input type="text" name="vehicleModel[]" placeholder="Enter vehicle model" required>
+                    <input type="text" name="adapterType[]" placeholder="Enter adapter type(s)" required>
+                    <button type="button" class="remove-btn" onclick="removeVehicle(this)"><img src="./images/bin.png"></button>
+                </div>
             </div>
+            <!-- Add Vehicle Button -->
+            <button type="button" id="addVehicleBtn">Add</button>
+
+            <!-- Submit Button -->
             <button type="submit" id="signupBtn" onclick="signup()">Submit</button>
         </form>
+
+        <!-- Login Link -->
         <div class="login-link">
-            <p>Already have an account? <a href="index.html">Login</a></p>
+            <p>Already have an account? <a href="/index.html">Login</a></p>
         </div>
     </div>
 
+    <!-- JavaScript -->
     <script src="./js/register.js"></script>
+    
 </body>
 </html>
