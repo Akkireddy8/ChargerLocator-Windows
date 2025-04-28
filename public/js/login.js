@@ -21,14 +21,19 @@ async function login() {
         });
 
         const result = await response.json();
-
+        console.log(response, result)
         if (response.ok) {
             alert("Login Successful!");
             console.log("Response:", result);
+           // localStorage.setItem('user', JSON.stringify(result));
             localStorage.setItem('token', result.token);
+            localStorage.setItem('userId', result.user._id);
+            localStorage.setItem('email', email);
+            const adapterTypes = result.user.vehicles.flatMap(vehicle => vehicle.adapterTypes);
+            localStorage.setItem('adapters', JSON.stringify(adapterTypes));
             window.location.href = "/dashboard.html";
         } else {
-            alert("Error: " + (result.error || "Login failed!"));
+            alert("Error: " + (result.error));
         }
     } catch (error) {
         console.error("Login Error:", error);

@@ -1,55 +1,55 @@
-// Example URL
-const url = new URL(window.location.href);
-const params = new URLSearchParams(url.search);
 
-const role = params.get('role');
-const token = params.get('token'); 
+const urlParams = new URLSearchParams(window.location.search);
+const role = urlParams.get("role");
+const token = urlParams.get("token");
 
-console.log('Role:', role);
-console.log('Token:', token);
+console.log("Role:", role);
+console.log("Token:", token);
 
-async function reset() {
-    const btn = document.getElementById('resetBtn');
+document.getElementById("resetForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const btn = document.getElementById("resetBtn");
     btn.disabled = true;
 
-    const newpassword = document.getElementById('newpassword').value.trim();
-    const confirmpassword = document.getElementById('confirmpassword').value.trim();
+    const password = document.getElementById("password").value.trim();
+    const confirmPassword = document.getElementById("confirmPassword").value.trim();
 
-    if (!newpassword || !confirmpassword) {
+    if (!password || !confirmPassword) {
         alert("Please fill in all fields!");
         btn.disabled = false;
         return;
     }
 
-    if (newpassword.length < 6) {
+    if (password.length < 6) {
         alert("Password must be at least 6 characters long!");
-        signupBtn.disabled = false;
+        btn.disabled = false;
         return;
     }
 
-    if (newpassword !== confirmpassword) {
+    if (password !== confirmPassword) {
         alert("Passwords do not match!");
         btn.disabled = false;
         return;
     }
 
     try {
-        const response = await fetch('/user/api/reset-password', {
-            method: "POST",
+        const response = await fetch("/user/api/reset-password", {
+            method: "PUT",
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ role, token, newpassword })
+            body: JSON.stringify({ role, token, newPassword: password })
         });
 
         const result = await response.json();
 
         if (response.ok) {
-            alert("Password reset Successful!");
+            alert("Password reset successful!");
             console.log("Response:", result);
-            window.location.href = "/index.html";
+            window.location.href = "/manager/index.html";
         } else {
-            alert("Error: " + (result.error ));
+            alert("Error: " + (result.error || "Unknown error"));
         }
     } catch (error) {
         console.error("Reset Password Error:", error);
@@ -57,4 +57,4 @@ async function reset() {
     } finally {
         btn.disabled = false;
     }
-}
+});
