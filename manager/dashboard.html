@@ -14,9 +14,10 @@
         <nav>
           <ul>
             <li><a href="#">Home</a></li>
-            <li><a href="#map">Map</a></li>
             <li><a href="#add-station">Add Station</a></li>
             <li><a href="#manage-stations">Manage Stations</a></li>
+            <li><a href="users.html">Users</a></li>
+            <li><a href="revenue-dashboard.html">Revenue</a></li>
             <li><a href="index.html">Logout</a></li>
           </ul>
         </nav>
@@ -71,12 +72,6 @@
 
                 <label for="services">Services Offered:</label>
                 <input type="text" id="services" name="services" required />
-
-                <label for="availability">Availability:</label>
-                <select id="availability" name="availability">
-                    <option value="Available">Available</option>
-                    <option value="Unavailable">Unavailable</option>
-                </select>
                 <button type="submit">Add / Update Station</button>
             </form>
         </div>
@@ -190,34 +185,57 @@
                 const chargerType = charger.querySelector('.charger-type').value;
                 const powerOutput = parseFloat(charger.querySelector('.power-output').value);
                 const pricing = parseFloat(charger.querySelector('.pricing').value);
-                const numChargers = parseInt(charger.querySelector('.numChargers').value);
+                const chargerId = charger.querySelector('.charger-id')?.value.trim() || undefined;
+                const isAvailable = charger.querySelector(".availability").value === 'true';
 
-                return Array.from({ length: numChargers }, (_, index) => ({
-                    chargerType,
-                    powerOutput,
-                    pricing,
-                }));
+                let numChargers = charger.querySelector('.numChargers') ? parseInt(charger.querySelector('.numChargers').value) : 1;
+                numChargers = isNaN(numChargers) ? 1 : numChargers;
+
+                return Array.from({ length: numChargers }, () => {
+                    let chargerData = { chargerType, powerOutput, pricing, isAvailable};
+                    if (chargerId) chargerData.chargerId = chargerId;
+                    return chargerData;
+                });
+
             });
 
-            data.chargers = chargers;
+            console.log("Form Chargers:", chargers);
 
             if (data._id) {
-                await fetch(`/station/api/stations/${data._id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                });
+                const response = await fetch(`/station/api/stations/${data._id}`);
+                const existingData = await response.json();
+
+                if (existingData.station && existingData.station.chargers) {
+                    const existingChargers = existingData.station.chargers;
+
+                    const updatedChargers = chargers.map(charger => {
+                        if (charger._id) {
+                            const existingCharger = existingChargers.find(c => c._id === charger._id);
+                            return existingCharger ? { ...existingCharger, ...charger } : charger;
+                        }
+                        return charger; 
+                    });
+
+                    data.chargers = updatedChargers;
+                } else {
+                    data.chargers = chargers;
+                }
             } else {
-                await fetch('/station/api/stations', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
-                });
+                data.chargers = chargers;
             }
+            console.log(data._id, data)
+            const requestOptions = {
+                method: data._id ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            };
+
+            await fetch(data._id ? `/station/api/stations/${data._id}` : '/station/api/stations', requestOptions);
 
             e.target.reset();
             window.location.reload(true);
         });
+
 
 
 
@@ -256,14 +274,14 @@
         }
 
         function editStation(station) {
-            console.log(station)
+            console.log("Editing Station:", station);
+            
             document.getElementById('name').value = station.name;
             document.getElementById('latitude').value = station.latitude;
             document.getElementById('longitude').value = station.longitude;
             document.getElementById('services').value = station.services;
             document.getElementById('address').value = station.address;
             document.getElementById('zipcode').value = station.zipcode;
-
 
             let hiddenIdField = document.getElementById('_id');
             if (!hiddenIdField) {
@@ -284,12 +302,18 @@
                 div.innerHTML = `
                     <input type="text" class="charger-id" value="${charger.chargerId}" readonly>
                     <select class="charger-type">
-                        <option value="Level 1" ${charger.chargerType === "Level 1" ? "selected" : ""}>Level 1</option>
-                        <option value="Level 2" ${charger.chargerType === "Level 2" ? "selected" : ""}>Level 2</option>
-                        <option value="Level 3" ${charger.chargerType === "Level 3" ? "selected" : ""}>Level 3</option>
+                        ${chargerTypes.map(type => `
+                            <option value="${type.name}" ${charger.chargerType === type.name ? "selected" : ""}>
+                                ${type.name} - ${type.description}
+                            </option>
+                        `).join('')}
                     </select>
                     <input type="number" class="power-output" value="${charger.powerOutput}" placeholder="Power Output (kW)">
                     <input type="number" class="pricing" value="${charger.pricing}" placeholder="Pricing per kWh">
+                    <select class="availability">
+                        <option value="true" ${charger.isAvailable ? 'selected' : ''}>Available</option>
+                        <option value="false" ${!charger.isAvailable ? 'selected' : ''}>Unavailable</option>
+                    </select>
                     <button type="button" class="btn-remove-charger" onclick="removeCharger(this, '${station._id}', '${charger.chargerId}')"> Remove </button>
                 `;
                 chargerList.appendChild(div);
@@ -320,11 +344,17 @@
             div.className = 'Charger';
 
             div.innerHTML = `
-                <input type="text" class="charger-id" value="${existingCharger.chargerId || ''}" placeholder="Charger ID" required>
+                <input type="text" class="charger-id" value="${existingCharger.chargerId || ''}" placeholder="Charger ID" readonly>
                 <select class="charger-type"></select>
                 <input type="number" class="power-output" value="${existingCharger.powerOutput || ''}" placeholder="Power Output (kW)">
                 <input type="number" class="pricing" value="${existingCharger.pricing || ''}" placeholder="Pricing per kWh">
                 <input type="number" value="1" class="numChargers" name="numChargers" min="1" placeholder="Enter number of chargers" required />
+
+                <select id="availability" class="availability" name="availability">
+                    <option value="true" ${existingCharger.isAvailable === true ? 'selected' : ''}>Available</option>
+                    <option value="false" ${existingCharger.isAvailable === false ? 'selected' : ''}>Unavailable</option>
+                </select>
+                
                 <button type="button" class="btn-remove-charger" onclick="remove(this)">Remove</button>
             `;
 
@@ -351,11 +381,15 @@
 
         async function removeCharger(button, stationId, chargerId) {
             try {
-                await fetch(`/station/api/stations/${stationId}/chargers/${chargerId}`, { method: 'DELETE' });
-                fetchStations();
-                button.parentElement.remove();
+                const response = await fetch(`/station/api/stations/${stationId}/chargers/${chargerId}`, { method: 'DELETE' });
+                if (response.ok) {
+                    button.parentElement.remove();
+                    alert("Charger removed successfully.");
+                } else {
+                    alert("Error removing charger.");
+                }
             } catch (error) {
-                console.error('Error deleting charger:', error);
+                console.error("Error deleting charger:", error);
             }
         }
 
@@ -416,5 +450,5 @@
     </script>
    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
     <script src="./js/chat.js"></script>
-</body> <br>
+</body>
 </html>

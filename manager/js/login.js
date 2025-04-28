@@ -21,10 +21,11 @@ async function login() {
         });
 
         const result = await response.json();
-
+        console.log(result)
         if (response.ok) {
             alert("Login Successful!");
             console.log("Response:", result);
+            localStorage.setItem('managerId', result.user._id)
             window.location.href = "/manager/dashboard.html";
         } else {
             alert("Error: " + (result.error || "Login failed!"));

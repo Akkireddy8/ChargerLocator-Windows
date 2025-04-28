@@ -108,6 +108,24 @@
             height: 30px;
             width: 30px;
         }
+        .table-chat-icon {
+            position: relative;
+        }
+
+        .message-counter {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 12px;
+            min-width: 15px;
+            text-align: center;
+            z-index: 1;
+        }
+
     </style>
 </head>
 <body>
@@ -117,6 +135,7 @@
             <ul>
                 <li><a href="dashboard.html">Home</a></li>
                 <li><a href="#">Users</a></li>
+                <li><a href="revenue-dashboard.html">Revenue</a></li>
                 <li><a href="index.html">Logout</a></li>
             </ul>
         </nav>
@@ -194,9 +213,15 @@
                 chatIconCell.classList.add('td-none');
                 const chatIcon = document.createElement('div');
                 chatIcon.classList.add('table-chat-icon');
+                const span = document.createElement('span');
+                span.textContent = '0';
+                span.classList.add('message-counter');
+                span.style.display = 'none';
+
                 const img = document.createElement('img');
                 img.src='./images/message.png'
                 img.classList.add('chat-img');
+                chatIcon.appendChild(span);
                 chatIcon.append(img);
                 chatIcon.onclick = () => openChat(user.email, user._id);
                 chatIconCell.appendChild(chatIcon);
@@ -260,7 +285,7 @@
             if (doc) {
                 const chatIcon = doc.querySelector('.table-chat-icon img');
                 if (chatIcon) {
-                    chatIcon.src = './images/message.png';
+                   // chatIcon.src = './images/message.png';
                     doc.querySelector('.table-chat-icon').style.display = 'none';
                 }
                 chatWithUserMail = '';
