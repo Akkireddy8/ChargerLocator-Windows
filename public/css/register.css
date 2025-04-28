@@ -6,11 +6,11 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    height: auto;
     background-image: url('../images/charger-ev.png');
     background-size: cover; 
     background-position: center; 
-    background-repeat: no-repeat; 
+    background-repeat: no-repeat;
 }
 
 .container {
@@ -20,6 +20,7 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 350px;
     text-align: center;
+    margin: 20px;
 }
 
 .logo {
@@ -88,4 +89,33 @@ button:hover {
 
 .login-link a:hover {
     text-decoration: underline;
+}
+
+.vehicle-entry {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.vehicle-entry input {
+    flex: 1;
+}
+
+button.remove-btn {
+    background-color: #ff4d4d00;
+    color: white;
+    border: none;
+    padding: 5px 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: auto;
+}
+
+button.remove-btn:hover {
+    background-color: #e6000000;
+}
+
+#addVehicleBtn {
+    display: block;
+    margin: 10px auto;
 }
