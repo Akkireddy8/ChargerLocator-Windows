@@ -19,14 +19,23 @@ const userSchema = new mongoose.Schema({
   phoneNumber: {
     type: String,
     required: true,
-    unique: true,
     match: [/^\d{10}$/, "Please enter a valid 10-digit phone number"],
   },
-  vehicleModel: {
-    type: String,
-    required: true,
-    trim: true,
-  },
+  vehicles: [
+    {
+      model: {
+        type: String,
+        required: true,
+        trim: true,
+      },
+      adapterTypes: [
+        {
+          type: String,
+          required: false,
+        }
+      ]
+    }
+  ],
   token: {
     type: String,
     required: false,
@@ -34,12 +43,25 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-userSchema.statics.findByEmail = async (email) => {
-  const user = await userModel.findOne({ email });
-  if (!user) {
-    throw new Error("User email not found");
+module.exports = mongoose.model('User', userSchema);
+
+
+userSchema.statics.findByEmail = async function (email) {
+  try {
+    if (!email || typeof email !== 'string') {
+      throw new Error('Invalid email provided');
+    }
+    const user = await this.findOne({ email });
+
+    if (!user) {
+      return null;
+    }
+
+    return user;
+  } catch (error) {
+    console.error('Error in findByEmail:', error.message);
+    throw error; 
   }
-  return user;
 };
 
 userSchema.methods.toJSON = function () {

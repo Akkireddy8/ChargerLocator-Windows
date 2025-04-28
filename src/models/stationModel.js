@@ -23,7 +23,7 @@ const ChargerSchema = new mongoose.Schema({
         type: Boolean,
         default: true 
     }
-});
+},{ _id: false });
 
 
 const StationSchema = new mongoose.Schema({
