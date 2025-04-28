@@ -11,9 +11,11 @@ router.get('/test', auth, (req,res)=>{
 })
 
 
+
 router.post('/login', Controllers.login)  // Login
 router.post('/register', Controllers.register) // Register
 router.post('/request-reset-password/:role', Controllers.resetPassword); // Request Reset Password
+
 
 router.put('/reset-password/', Controllers.confirmResetPassword) // update new password
 
